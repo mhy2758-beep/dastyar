@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/"
+title = "دستیار مهندس ناظر"
+description = "A Persian-first, RTL mobile construction inspection app for managing projects, site visits, progress, and future offline-first inspection workflows."
+version = "1.0.0"
+id = "artifacts/smart-building-inspector"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 18295
+
+[services.development]
+run = "pnpm --filter @workspace/smart-building-inspector run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/smart-building-inspector", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/smart-building-inspector", "run", "serve" ]
+
+[services.env]
+PORT = "18295"
+BASE_PATH = "/"

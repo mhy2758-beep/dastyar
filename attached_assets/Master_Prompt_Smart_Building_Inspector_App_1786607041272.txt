@@ -1,0 +1,441 @@
+MASTER PROMPT — Smart Building Inspector App
+
+Phase 1: Architecture, Project Setup & Foundation
+
+You are a senior full-stack mobile application architect and engineer.
+
+We are building a professional mobile application for a building construction inspector in Iran.
+
+The application is Persian-first, RTL, mobile-first, offline-capable, and designed specifically for real construction-site inspection work.
+
+The application should eventually provide:
+
+- Project management
+- Construction stage management
+- Site visit management
+- Editable stage-based checklists
+- Photo documentation
+- Text notes
+- Voice notes
+- Voice-to-text
+- Violation management
+- AI-assisted technical report generation
+- Iranian building regulation knowledge base
+- Project document management
+- PDF report generation
+- Google Drive synchronization
+- Offline-first operation
+- Search
+- Professional dashboard
+
+IMPORTANT:
+Do not attempt to build every feature in this phase.
+
+First create a stable technical foundation and architecture.
+
+==================================================
+
+1. TECHNOLOGY
+   ==================================================
+
+Use a modern mobile-first architecture.
+
+Preferred stack:
+
+Frontend:
+React Native + Expo + TypeScript
+
+Backend:
+Node.js / TypeScript
+
+Database:
+PostgreSQL on the backend
+
+Local mobile database:
+Expo SQLite
+
+Authentication:
+Secure authentication with Google-compatible authentication architecture.
+
+Cloud storage:
+Google Drive integration will be added in a later phase.
+
+AI:
+Gemini API will be integrated through the secure backend.
+
+The architecture must allow the application to work offline.
+
+Do not expose API keys or private credentials inside the mobile application.
+
+==================================================
+2. PRODUCT DESIGN
+
+The app is called:
+
+"دستیار مهندس ناظر"
+
+Use a professional engineering visual language.
+
+UI requirements:
+
+- Persian
+- RTL
+- Clean
+- Minimal
+- Professional
+- Fast
+- Large touch targets
+- Suitable for one-handed construction-site use
+- Light mode
+- Dark mode
+
+Avoid unnecessary animations and decorative elements.
+
+Use a modern Persian font such as Vazirmatn if technically appropriate.
+
+==================================================
+3. INITIAL NAVIGATION
+
+Create the following bottom navigation:
+
+Home
+Projects
+Visits
+Reports
+Settings
+
+Create a proper navigation architecture so additional project-specific
+screens can be added later without restructuring the entire app.
+
+==================================================
+4. PROJECT DATA MODEL
+
+Create the initial Project entity with:
+
+id
+name
+address
+ownerName
+ownerPhone
+caseNumber
+buildingPermitNumber
+renovationCode
+permitDate
+buildingType
+numberOfFloors
+startDate
+currentStageId
+progressPercentage
+status
+createdAt
+updatedAt
+lastVisitAt
+
+Project statuses:
+
+ACTIVE
+COMPLETED
+SUSPENDED
+ARCHIVED
+
+Use robust IDs suitable for offline synchronization.
+
+==================================================
+5. CONSTRUCTION STAGES
+
+Create a Stage entity.
+
+Each stage should contain:
+
+id
+name
+order
+isActive
+createdAt
+updatedAt
+
+Create default stages such as:
+
+Foundation
+Structural Frame
+Slab
+Masonry
+MEP
+Facade
+Finishing
+Final Inspection
+
+The system must support custom stages in the future.
+
+Do not hard-code stages into UI components.
+
+==================================================
+6. HOME DASHBOARD
+
+Create the initial dashboard UI.
+
+Display:
+
+- Active projects
+- Visits this week
+- Open violations
+- Reports this month
+- Recently accessed projects
+
+Add a prominent:
+
+"+ ثبت بازدید"
+
+button.
+
+For this phase, placeholder/mock statistics are acceptable if the underlying
+database data is not yet available.
+
+==================================================
+7. PROJECT LIST
+
+Create:
+
+Projects screen
+
+Features:
+
+- Search
+- Project list
+- Active/completed filtering
+- Project cards
+- Project creation
+- Project details navigation
+
+Each project card should show:
+
+Project name
+Current stage
+Progress
+Last visit
+Open violation count
+
+==================================================
+8. PROJECT DETAILS
+
+Create the project details screen.
+
+Display:
+
+Project name
+Address
+Current stage
+Progress
+Renovation code
+Building permit number
+Permit date
+
+Create navigation buttons/placeholders for:
+
+Visits
+Photos
+Checklists
+Notes
+Violations
+Reports
+Project Documents
+AI Assistant
+Google Drive
+
+These modules can initially be placeholders, but the navigation architecture
+must be real and extensible.
+
+==================================================
+9. DATABASE ARCHITECTURE
+
+Design the relational database so the following entities can be added:
+
+Users
+Projects
+Stages
+Visits
+Photos
+ChecklistTemplates
+ChecklistItems
+ChecklistSnapshots
+ChecklistRecords
+Notes
+VoiceNotes
+Violations
+ViolationPhotos
+Reports
+ProjectDocuments
+SyncQueue
+AIRequests
+RegulatorySources
+
+Only implement the entities necessary for this phase.
+
+Create proper relationships and indexes.
+
+Do not create a single giant JSON table for all application data.
+
+Use normalized relational structures.
+
+==================================================
+10. OFFLINE-FIRST FOUNDATION
+
+The mobile application must be designed around offline-first principles.
+
+Create the architecture for:
+
+Local database
+Local records
+Sync status
+Sync queue
+Conflict handling
+
+Each syncable record should be capable of having a state such as:
+
+LOCAL
+PENDING
+SYNCING
+SYNCED
+ERROR
+
+Do not implement the complete synchronization engine yet.
+
+However, do not design the application in a way that would prevent offline
+support later.
+
+==================================================
+11. PROJECT FILE ARCHITECTURE
+
+Create the Project Documents module architecture.
+
+A project may eventually contain:
+
+PDF drawings
+Architectural drawings
+Structural drawings
+MEP drawings
+Calculation documents
+Technical specifications
+Word files
+Excel files
+Images
+ZIP files
+Other documents
+
+For now, create the database/model and UI architecture necessary for this
+feature.
+
+Actual Google Drive synchronization will be implemented in a later phase.
+
+==================================================
+12. CODE QUALITY
+
+Use TypeScript strictly.
+
+Use clear folder structure.
+
+Separate:
+
+UI
+Business logic
+Database
+API
+Services
+Models/types
+Utilities
+Configuration
+
+Do not place all application logic inside screen components.
+
+Create reusable components.
+
+Use environment variables for secrets.
+
+Do not hard-code API keys.
+
+==================================================
+13. RESPONSIVE MOBILE UI
+
+The primary target is Android.
+
+The application must also remain compatible with iOS architecture.
+
+Make sure:
+
+- RTL works correctly
+- Persian text displays correctly
+- Buttons are touch-friendly
+- Keyboard handling is correct
+- Forms are scrollable
+- UI works on common Android screen sizes
+
+==================================================
+14. ERROR HANDLING
+
+Create a consistent error-handling architecture.
+
+Do not allow uncaught errors to crash the application.
+
+Create user-friendly Persian error messages.
+
+Log technical errors separately from user-facing messages.
+
+==================================================
+15. TESTING
+
+Before completing this phase:
+
+- Run TypeScript checks
+- Run linting
+- Run available tests
+- Verify database connectivity
+- Verify navigation
+- Verify RTL
+- Verify project creation
+- Verify project editing
+- Verify project list
+- Verify project details
+- Verify application starts without errors
+
+Fix all blocking errors.
+
+==================================================
+16. IMPORTANT DEVELOPMENT RULE
+
+Do NOT implement:
+
+- AI
+- Gemini
+- Google Drive
+- Voice transcription
+- Regulatory RAG
+- PDF generation
+- Advanced synchronization
+
+in this phase.
+
+Those will be implemented in later phases.
+
+==================================================
+17. DELIVERABLE
+
+At the end of this phase provide:
+
+1. Final architecture
+2. Folder structure
+3. Database schema
+4. Implemented screens
+5. Implemented navigation
+6. Environment variables required
+7. Dependencies installed
+8. Tests performed
+9. Known limitations
+10. Recommended next phase
+
+Do not hide technical problems.
+
+If a design decision has multiple valid options, explain the trade-off and
+choose the option that is most reliable for a professional offline-first
+mobile application.
+
+Start by analyzing this specification and implementing Phase 1.
