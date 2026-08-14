@@ -6,7 +6,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { IconButton, PrimaryButton } from '@/components/AppUI';
 import { useProjects } from '@/context/ProjectContext';
 import { useColors } from '@/hooks/useColors';
-import { DEFAULT_STAGES, Project, ProjectStatus } from '@/types/inspection';
+import { ProjectStatus } from '@/types/inspection';
 
 type FormState = {
   name: string;
@@ -29,7 +29,7 @@ const emptyForm: FormState = {
   renovationCode: '',
   buildingType: 'مسکونی',
   numberOfFloors: '۱',
-  currentStageId: DEFAULT_STAGES[0].id,
+  currentStageId: '',
 };
 
 function Field({ label, value, onChangeText, placeholder, keyboardType = 'default' }: { label: string; value: string; onChangeText: (value: string) => void; placeholder: string; keyboardType?: 'default' | 'phone-pad' | 'numeric' }) {
@@ -54,7 +54,7 @@ export default function NewProjectScreen() {
   const colors = useColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { projects, addProject, updateProject } = useProjects();
+  const { projects, stages, addProject, updateProject } = useProjects();
   const existingProject = id ? projects.find((project) => project.id === id) : undefined;
   const [form, setForm] = useState<FormState>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
@@ -74,6 +74,12 @@ export default function NewProjectScreen() {
     });
   }, [existingProject]);
 
+  useEffect(() => {
+    if (!existingProject && !form.currentStageId && stages[0]) {
+      setForm((current) => ({ ...current, currentStageId: stages[0].id }));
+    }
+  }, [existingProject, form.currentStageId, stages]);
+
   const setField = (key: keyof FormState) => (value: string) => setForm((current) => ({ ...current, [key]: value }));
 
   const save = async () => {
@@ -83,6 +89,11 @@ export default function NewProjectScreen() {
     }
     setIsSaving(true);
     try {
+      const selectedStageId = form.currentStageId || stages[0]?.id;
+      if (!selectedStageId) {
+        Alert.alert('مراحل ساخت آماده نیست', 'پایگاه داده محلی هنوز مراحل ساخت را آماده نکرده است.');
+        return;
+      }
       if (existingProject) {
         await updateProject(existingProject.id, {
           name: form.name.trim(),
@@ -93,7 +104,7 @@ export default function NewProjectScreen() {
           renovationCode: form.renovationCode.trim(),
           buildingType: form.buildingType.trim() || 'مسکونی',
           numberOfFloors: Number(form.numberOfFloors) || 1,
-          currentStageId: form.currentStageId,
+          currentStageId: selectedStageId,
         });
         router.back();
       } else {
@@ -109,7 +120,7 @@ export default function NewProjectScreen() {
           buildingType: form.buildingType.trim() || 'مسکونی',
           numberOfFloors: Number(form.numberOfFloors) || 1,
           startDate: new Date().toISOString(),
-          currentStageId: form.currentStageId,
+          currentStageId: selectedStageId,
           progressPercentage: 0,
           status: 'ACTIVE' as ProjectStatus,
           lastVisitAt: undefined,
@@ -150,7 +161,7 @@ export default function NewProjectScreen() {
         <View style={styles.stageField}>
           <Text style={[styles.label, { color: colors.foreground }]}>مرحله فعلی</Text>
           <View style={styles.stageGrid}>
-            {DEFAULT_STAGES.slice(0, 6).map((stage) => (
+            {stages.slice(0, 6).map((stage) => (
               <Pressable
                 key={stage.id}
                 onPress={() => setField('currentStageId')(stage.id)}

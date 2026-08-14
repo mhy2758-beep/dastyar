@@ -115,10 +115,6 @@ export const initialProjects: Project[] = [
   },
 ];
 
-export function getStageName(stageId: string) {
-  return DEFAULT_STAGES.find((stage) => stage.id === stageId)?.name ?? 'مرحله تعریف نشده';
-}
-
 export function formatDate(value?: string) {
   if (!value) return 'ثبت نشده';
   try {

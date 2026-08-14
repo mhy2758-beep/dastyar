@@ -1,8 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { initialProjects, Project, createLocalId } from '@/types/inspection';
-
-const PROJECTS_STORAGE_KEY = '@inspector/projects';
+import { initializeLocalDatabase } from '@/data/localDatabase';
+import { insertProject, listProjects, listStages, updateProjectRecord } from '@/data/projectRepository';
+import { DEFAULT_STAGES, initialProjects, Project, Stage, createLocalId } from '@/types/inspection';
 
 type ProjectInput = Omit<
   Project,
@@ -13,7 +12,9 @@ type ProjectInput = Omit<
 
 type ProjectContextValue = {
   projects: Project[];
+  stages: Stage[];
   isHydrated: boolean;
+  databaseError: string | null;
   addProject: (input: ProjectInput) => Promise<Project>;
   updateProject: (id: string, changes: Partial<Project>) => Promise<void>;
 };
@@ -21,39 +22,41 @@ type ProjectContextValue = {
 const ProjectContext = createContext<ProjectContextValue | null>(null);
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [stages, setStages] = useState<Stage[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [databaseError, setDatabaseError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    AsyncStorage.getItem(PROJECTS_STORAGE_KEY)
-      .then((stored) => {
+    (async () => {
+      try {
+        await initializeLocalDatabase();
+        const [nextProjects, nextStages] = await Promise.all([listProjects(), listStages()]);
         if (!mounted) return;
-        if (stored) {
-          setProjects(JSON.parse(stored) as Project[]);
-        } else {
-          AsyncStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(initialProjects)).catch(() => undefined);
-        }
-      })
-      .catch(() => undefined)
-      .finally(() => {
+        setProjects(nextProjects);
+        setStages(nextStages);
+      } catch {
+        if (!mounted) return;
+        setDatabaseError('پایگاه داده محلی در دسترس نیست.');
+        setProjects(initialProjects);
+        setStages(DEFAULT_STAGES);
+      } finally {
         if (mounted) setIsHydrated(true);
-      });
+      }
+    })();
 
     return () => {
       mounted = false;
     };
   }, []);
 
-  const persist = async (nextProjects: Project[]) => {
-    setProjects(nextProjects);
-    await AsyncStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(nextProjects));
-  };
-
   const value = useMemo<ProjectContextValue>(
     () => ({
       projects,
+      stages,
       isHydrated,
+      databaseError,
       addProject: async (input) => {
         const now = new Date().toISOString();
         const nextProject: Project = {
@@ -64,19 +67,16 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
           openViolationCount: input.openViolationCount ?? 0,
           syncStatus: 'LOCAL',
         };
-        await persist([nextProject, ...projects]);
+        await insertProject(nextProject);
+        setProjects(await listProjects());
         return nextProject;
       },
       updateProject: async (id, changes) => {
-        const nextProjects = projects.map((project) =>
-          project.id === id
-          ? { ...project, ...changes, updatedAt: new Date().toISOString(), syncStatus: 'PENDING' as const }
-            : project,
-        );
-        await persist(nextProjects);
+        await updateProjectRecord(id, changes);
+        setProjects(await listProjects());
       },
     }),
-    [isHydrated, projects],
+    [databaseError, isHydrated, projects, stages],
   );
 
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;

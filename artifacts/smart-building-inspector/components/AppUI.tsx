@@ -10,8 +10,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useProjects } from '@/context/ProjectContext';
 import { useColors } from '@/hooks/useColors';
-import { formatDate, getStageName, Project } from '@/types/inspection';
+import { formatDate, Project } from '@/types/inspection';
 
 export function Screen({
   children,
@@ -172,6 +173,8 @@ export function ProgressBar({ progress }: { progress: number }) {
 
 export function ProjectCard({ project, onPress }: { project: Project; onPress: () => void }) {
   const colors = useColors();
+  const { stages } = useProjects();
+  const stageName = stages.find((stage) => stage.id === project.currentStageId)?.name ?? 'در حال بارگذاری';
   return (
     <Pressable
       onPress={onPress}
@@ -191,7 +194,7 @@ export function ProjectCard({ project, onPress }: { project: Project; onPress: (
         </View>
       </View>
       <View style={styles.stageRow}>
-        <Text style={[styles.stageText, { color: colors.foreground }]}>{getStageName(project.currentStageId)}</Text>
+        <Text style={[styles.stageText, { color: colors.foreground }]}>{stageName}</Text>
         <Text style={[styles.progressText, { color: colors.primary }]}>{project.progressPercentage}٪</Text>
       </View>
       <ProgressBar progress={project.progressPercentage} />

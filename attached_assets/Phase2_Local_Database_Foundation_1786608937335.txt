@@ -1,0 +1,373 @@
+PHASE 2 — REAL LOCAL DATABASE FOUNDATION
+
+Do not redesign or rebuild the application from scratch.
+
+Keep the current UI, navigation, project screens, and overall visual design.
+
+We are now replacing the prototype persistence layer with a proper offline-first
+local database foundation.
+
+IMPORTANT:
+Do not implement Google Drive, Gemini, AI, voice transcription, PDF generation,
+or advanced cloud synchronization in this phase.
+
+==================================================
+1. REPLACE ASYNCSTORAGE WITH EXPO SQLITE
+==================================================
+
+Install and configure the appropriate Expo SQLite package compatible with the
+current Expo SDK 54 / React Native version.
+
+Do not continue using AsyncStorage as the primary application database.
+
+AsyncStorage may remain temporarily for non-database preferences if needed,
+but project and construction data must move to SQLite.
+
+==================================================
+2. DATABASE ARCHITECTURE
+==================================================
+
+Create a clean local database layer.
+
+Use a repository/service architecture.
+
+Screens must NOT directly execute SQL queries.
+
+Recommended architecture:
+
+UI
+↓
+Hooks / Context
+↓
+Repositories
+↓
+SQLite Database Layer
+
+Keep database logic separated from UI.
+
+==================================================
+3. INITIAL DATABASE TABLES
+==================================================
+
+Create the following tables now:
+
+projects
+stages
+
+Also prepare the schema architecture for future tables:
+
+visits
+photos
+checklist_templates
+checklist_items
+checklist_snapshots
+checklist_records
+notes
+voice_notes
+violations
+violation_photos
+reports
+project_documents
+sync_queue
+
+Only implement projects and stages fully in this phase.
+
+The future tables may be represented in the schema design but should not contain
+unnecessary placeholder functionality.
+
+==================================================
+4. PROJECT TABLE
+==================================================
+
+Create a normalized projects table containing:
+
+id
+name
+address
+owner_name
+owner_phone
+case_number
+building_permit_number
+renovation_code
+permit_date
+building_type
+number_of_floors
+start_date
+current_stage_id
+progress_percentage
+status
+created_at
+updated_at
+last_visit_at
+
+Use stable IDs suitable for offline-first operation.
+
+Use appropriate SQLite data types.
+
+Do not store the entire project collection as one JSON object.
+
+==================================================
+5. STAGES TABLE
+==================================================
+
+Create:
+
+id
+name
+order_index
+is_active
+created_at
+updated_at
+
+Do not hard-code construction stages into UI components.
+
+Stages must come from the database.
+
+==================================================
+6. DEFAULT STAGES
+==================================================
+
+Create default construction stages:
+
+Foundation
+Structural Frame
+Slab
+Masonry
+MEP
+Facade
+Finishing
+Final Inspection
+
+The application must load these stages from SQLite.
+
+==================================================
+7. MIGRATION FROM CURRENT DATA
+==================================================
+
+The current prototype contains demo projects stored in AsyncStorage.
+
+Create a one-time migration mechanism.
+
+If old AsyncStorage project data exists:
+
+AsyncStorage
+↓
+read existing projects
+↓
+validate
+↓
+insert into SQLite
+↓
+mark migration complete
+
+Do not duplicate records if the migration runs more than once.
+
+If migration succeeds, the application must continue working normally.
+
+Do not silently delete existing user/project data.
+
+==================================================
+8. PROJECT CRUD
+==================================================
+
+Update the existing project functionality to use SQLite:
+
+Create project
+Read projects
+Read project by ID
+Update project
+Search projects
+Filter projects
+
+The current project list and project details screens must continue to work.
+
+The current mock projects may be migrated into SQLite as initial demo data.
+
+==================================================
+9. PROJECT CONTEXT
+==================================================
+
+Refactor ProjectContext so it no longer uses AsyncStorage as the primary
+project database.
+
+ProjectContext should communicate with the repository layer.
+
+Do not place SQL logic inside ProjectContext.
+
+==================================================
+10. OFFLINE FOUNDATION
+==================================================
+
+Add a sync_status field where appropriate.
+
+Possible values:
+
+LOCAL
+PENDING
+SYNCING
+SYNCED
+ERROR
+
+Do not implement actual cloud synchronization yet.
+
+However, the database design must support future synchronization.
+
+==================================================
+11. SYNC QUEUE
+==================================================
+
+Create the initial sync_queue table.
+
+Suggested fields:
+
+id
+entity_type
+entity_id
+operation
+status
+retry_count
+last_error
+created_at
+updated_at
+
+Do not implement a complete background sync worker yet.
+
+Only create the foundation.
+
+==================================================
+12. VALIDATION
+==================================================
+
+Do not blindly cast database results to TypeScript types.
+
+Validate database records before exposing them to the application.
+
+Use Zod where appropriate.
+
+Handle malformed records safely.
+
+==================================================
+13. DATABASE INITIALIZATION
+==================================================
+
+Create a reliable database initialization process.
+
+It must:
+
+- Create database
+- Create tables
+- Create indexes
+- Run migrations
+- Seed default stages
+- Handle repeated app launches safely
+
+Database initialization must be idempotent.
+
+The app must not recreate or delete the database every time it starts.
+
+==================================================
+14. PERFORMANCE
+==================================================
+
+Create appropriate indexes for:
+
+projects.id
+projects.name
+projects.status
+projects.current_stage_id
+stages.id
+stages.order_index
+
+Do not load unnecessary data into memory.
+
+The architecture must be capable of supporting:
+
+Hundreds of projects
+Thousands of visits
+Large numbers of checklist records
+Large numbers of photos/documents metadata
+
+Actual photo binary files should NOT be stored inside SQLite.
+
+SQLite should store metadata and local file paths/references.
+
+==================================================
+15. UI
+==================================================
+
+Do not redesign the existing UI.
+
+Keep the current visual appearance.
+
+Only make the minimum changes required to connect the screens to SQLite.
+
+If loading states are needed, implement them cleanly.
+
+Use Persian RTL UI.
+
+==================================================
+16. TESTING
+==================================================
+
+Before finishing:
+
+1. Run TypeScript check.
+2. Start Expo successfully.
+3. Create a new project.
+4. Close/reload the app.
+5. Verify the project still exists.
+6. Edit the project.
+7. Reload the app.
+8. Verify the edit persists.
+9. Search for a project.
+10. Filter projects.
+11. Open project details.
+12. Verify stages are loaded from SQLite.
+13. Verify database initialization is idempotent.
+14. Verify migration does not duplicate records.
+
+Fix all blocking errors.
+
+==================================================
+17. DO NOT IMPLEMENT YET
+==================================================
+
+Do NOT implement:
+
+- Google Drive
+- Gemini
+- AI assistant
+- RAG
+- Voice recording
+- Speech-to-text
+- Camera
+- Photo upload
+- PDF generation
+- Cloud synchronization
+- Authentication
+- Backend CRUD
+
+Those belong to later phases.
+
+==================================================
+18. FINAL REPORT
+==================================================
+
+When finished, report:
+
+1. SQLite package/version used
+2. Database schema
+3. Tables created
+4. Repository architecture
+5. Migration approach
+6. AsyncStorage usage remaining, if any
+7. Sync queue design
+8. Files created/modified
+9. Tests performed
+10. Errors/warnings
+11. Recommended next phase
+
+Do not make unrelated changes.
+
+The goal of this phase is to establish a reliable local database foundation
+before implementing visits, checklists, photos, notes and violations.

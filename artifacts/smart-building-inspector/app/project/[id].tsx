@@ -5,13 +5,13 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppHeader, IconButton, ModuleTile, ProgressBar, Screen, StatusPill } from '@/components/AppUI';
 import { useProjects } from '@/context/ProjectContext';
 import { useColors } from '@/hooks/useColors';
-import { formatDate, getStageName } from '@/types/inspection';
+import { formatDate } from '@/types/inspection';
 
 export default function ProjectDetailsScreen() {
   const colors = useColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { projects } = useProjects();
+  const { projects, stages } = useProjects();
   const project = projects.find((item) => item.id === id);
 
   if (!project) {
@@ -19,6 +19,7 @@ export default function ProjectDetailsScreen() {
   }
 
   const showComingSoon = (moduleName: string) => Alert.alert(moduleName, 'این بخش در معماری برنامه آماده شده و در فاز بعدی تکمیل می‌شود.');
+  const stageName = stages.find((stage) => stage.id === project.currentStageId)?.name ?? 'در حال بارگذاری';
   const modules = [
     { icon: 'calendar' as const, title: 'بازدیدها', description: 'تاریخچه بازدیدها', onPress: () => router.push('/visits') },
     { icon: 'camera' as const, title: 'عکس‌ها', description: 'مستندات تصویری', onPress: () => showComingSoon('عکس‌های پروژه') },
@@ -52,7 +53,7 @@ export default function ProjectDetailsScreen() {
         <ProgressBar progress={project.progressPercentage} />
         <View style={styles.progressFooter}>
           <Text style={[styles.progressMeta, { color: colors.primaryForeground }]}>آخرین بازدید: {formatDate(project.lastVisitAt)}</Text>
-          <Text style={[styles.progressMeta, { color: colors.primaryForeground }]}>{getStageName(project.currentStageId)}</Text>
+            <Text style={[styles.progressMeta, { color: colors.primaryForeground }]}>{stageName}</Text>
         </View>
       </View>
       <View style={styles.quickFacts}>

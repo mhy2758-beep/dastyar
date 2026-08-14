@@ -1,0 +1,1 @@
+- [Expo SQLite web bundling](expo-sqlite-web.md) — Expo SQLite 16 requires Metro to treat its bundled `.wasm` file as an asset for web exports.
