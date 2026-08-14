@@ -1,0 +1,499 @@
+PHASE 3 — REAL INSPECTION WORKFLOW
+
+Phase 2 is complete and verified.
+
+Do NOT rebuild the application.
+Do NOT change the existing visual design unnecessarily.
+Do NOT replace SQLite.
+Build on the existing SQLite + Repository architecture.
+
+The goal of Phase 3 is to implement the first real construction inspection
+workflow:
+
+PROJECT → VISIT → STAGE → CHECKLIST → PHOTOS → NOTES
+
+==================================================
+1. VISIT DATA MODEL
+==================================================
+
+Create a normalized SQLite table:
+
+visits
+
+Fields:
+
+id
+project_id
+stage_id
+visit_date
+start_time
+end_time
+title
+description
+status
+created_at
+updated_at
+sync_status
+
+Relationships:
+
+Project 1 → many Visits
+Stage 1 → many Visits
+
+A visit must always belong to a project.
+
+==================================================
+2. VISIT SCREEN
+==================================================
+
+Implement real visit functionality.
+
+Inside each project create:
+
+"بازدیدها"
+
+Show:
+
+- Previous visits
+- Visit date
+- Construction stage
+- Visit title
+- Checklist completion percentage
+- Open violations count
+
+Add:
+
+"+ ثبت بازدید"
+
+==================================================
+3. CREATE VISIT
+==================================================
+
+Create a real visit form.
+
+Fields:
+
+Date
+Time
+Construction stage
+Visit title
+Description
+
+The construction stage must be loaded from SQLite.
+
+When saved:
+
+Create a real visit record in SQLite.
+
+Do not use mock data.
+
+==================================================
+4. CHECKLIST ARCHITECTURE
+==================================================
+
+Implement the checklist system properly.
+
+Create these SQLite tables:
+
+checklist_templates
+checklist_items
+checklist_snapshots
+checklist_records
+
+Relationships:
+
+Stage
+↓
+Checklist Template
+↓
+Checklist Items
+
+When a new visit is created:
+
+Current checklist template for that stage
+↓
+Create immutable checklist snapshot
+↓
+Create checklist records for that visit
+
+IMPORTANT:
+
+A visit must use a SNAPSHOT of the checklist.
+
+If the checklist is edited later, historical visits must NOT change.
+
+==================================================
+5. CHECKLIST ITEM STRUCTURE
+==================================================
+
+Each checklist item should support:
+
+id
+template_id
+title
+description
+order_index
+is_active
+created_at
+updated_at
+
+==================================================
+6. CHECKLIST RECORD
+==================================================
+
+Each visit checklist record should contain:
+
+id
+visit_id
+snapshot_id
+checklist_item_id
+status
+note
+created_at
+updated_at
+
+Statuses:
+
+PENDING
+PASS
+FAIL
+NOT_APPLICABLE
+
+The UI must allow the inspector to change the status.
+
+==================================================
+7. CHECKLIST UI
+==================================================
+
+Inside an active visit display:
+
+Construction stage
+Checklist progress
+
+For each checklist item:
+
+☐ Pending
+✓ Pass
+✗ Fail
+— Not applicable
+
+Allow a short note for each checklist item.
+
+Show progress such as:
+
+12 / 18 completed
+
+The checklist must be easy to use on a construction site.
+
+Large touch targets.
+
+RTL Persian UI.
+
+==================================================
+8. CHECKLIST MANAGEMENT
+==================================================
+
+Add a section in Settings:
+
+"مدیریت چک‌لیست‌ها"
+
+Show construction stages.
+
+Example:
+
+فونداسیون
+اسکلت
+سقف
+دیوارچینی
+تأسیسات
+نما
+نازک‌کاری
+بازدید نهایی
+
+Selecting a stage opens its checklist template.
+
+Allow:
+
+Add item
+Edit item
+Delete/deactivate item
+Reorder items
+
+Changes affect FUTURE visits only.
+
+Existing visit snapshots must remain unchanged.
+
+==================================================
+9. DEFAULT CHECKLISTS
+==================================================
+
+Create useful initial checklist items for major stages.
+
+Do NOT claim that these are complete legal requirements.
+
+They are initial configurable inspection checklists.
+
+The user must be able to edit them.
+
+Keep the architecture open for adding many more items later.
+
+==================================================
+10. PHOTO MODEL
+==================================================
+
+Create SQLite table:
+
+photos
+
+Fields:
+
+id
+project_id
+visit_id
+local_uri
+file_name
+captured_at
+latitude
+longitude
+caption
+created_at
+updated_at
+sync_status
+
+IMPORTANT:
+
+Do NOT store image binary data in SQLite.
+
+Store only metadata and local file URI/reference.
+
+==================================================
+11. PHOTO CAPTURE
+==================================================
+
+Implement:
+
+Take photo with camera
+Select photo from gallery
+
+When a photo is taken:
+
+- Save it locally
+- Create photo metadata in SQLite
+- Associate it with current project
+- Associate it with current visit
+- Store capture date/time
+
+The photo must remain accessible after app restart.
+
+Do NOT implement Google Drive upload yet.
+
+==================================================
+12. PHOTO GALLERY
+==================================================
+
+Inside each visit:
+
+"عکس‌ها"
+
+Display photos in a grid.
+
+Tap a photo to view it.
+
+Show:
+
+Date/time
+Caption if available
+
+Allow:
+
+Delete photo
+Add caption
+
+Do not build advanced photo editing.
+
+==================================================
+13. NOTES
+==================================================
+
+Create:
+
+notes
+
+Fields:
+
+id
+project_id
+visit_id
+type
+text
+created_at
+updated_at
+sync_status
+
+Type:
+
+TEXT
+VOICE
+
+Implement TEXT notes now.
+
+Inside each visit add:
+
+"یادداشت"
+
+Allow:
+
+Add text note
+Edit note
+Delete note
+
+Voice recording will be implemented in a later AI/audio phase.
+
+==================================================
+14. VISIT DETAIL SCREEN
+==================================================
+
+Create a professional visit detail screen with sections:
+
+بازدید
+├── اطلاعات بازدید
+├── چک‌لیست
+├── عکس‌ها
+└── یادداشت‌ها
+
+Use cards or clearly separated sections.
+
+Keep navigation simple.
+
+==================================================
+15. DATABASE / REPOSITORY
+==================================================
+
+Do not put SQL directly inside screens.
+
+Create repositories/services for:
+
+VisitRepository
+ChecklistRepository
+PhotoRepository
+NoteRepository
+
+Keep the same architecture established in Phase 2.
+
+==================================================
+16. OFFLINE-FIRST
+==================================================
+
+Everything implemented in this phase must work without internet:
+
+Create visit
+Edit visit
+Checklist
+Photos
+Text notes
+
+Data must remain available after app restart.
+
+Add sync_status metadata where appropriate.
+
+Do NOT implement cloud sync yet.
+
+==================================================
+17. PERFORMANCE
+==================================================
+
+Do not load all photos from all projects at once.
+
+Load photos per project/visit.
+
+Use SQLite queries efficiently.
+
+Do not store photo binaries in SQLite.
+
+==================================================
+18. UI
+==================================================
+
+Preserve the existing design system.
+
+Keep:
+
+Persian
+RTL
+Professional engineering appearance
+Light/Dark mode
+Large touch targets
+
+Do not introduce unnecessary animations.
+
+==================================================
+19. TESTING
+==================================================
+
+Before completing Phase 3:
+
+Run TypeScript check.
+
+Verify:
+
+1. Create project.
+2. Create visit.
+3. Reload app.
+4. Visit persists.
+5. Select stage.
+6. Checklist snapshot is created.
+7. Complete checklist items.
+8. Add checklist note.
+9. Edit checklist template.
+10. Create another visit.
+11. Verify new visit gets updated checklist.
+12. Verify old visit remains unchanged.
+13. Take photo.
+14. Restart app.
+15. Verify photo remains accessible.
+16. Add text note.
+17. Restart app.
+18. Verify note remains.
+19. Verify no photo binaries are stored in SQLite.
+20. Verify no duplicate checklist snapshots are created.
+
+Fix Phase 3 errors before reporting completion.
+
+==================================================
+20. STRICTLY OUT OF SCOPE
+==================================================
+
+Do NOT implement:
+
+Google Drive
+Gemini
+AI
+RAG
+Voice-to-text
+Voice recording
+Violation reporting
+PDF generation
+Authentication
+Cloud synchronization
+
+These belong to later phases.
+
+==================================================
+21. FINAL REPORT
+==================================================
+
+At completion provide:
+
+- Database tables created
+- Repository files created
+- Screens created/modified
+- Checklist architecture
+- Photo storage architecture
+- Offline behavior
+- Tests performed
+- Errors/warnings
+- Remaining limitations
+
+Do not make unrelated changes.
+
+Start Phase 3 now.

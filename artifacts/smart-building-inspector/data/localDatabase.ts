@@ -86,8 +86,13 @@ const schemaSql = `
     id TEXT PRIMARY KEY NOT NULL,
     project_id TEXT NOT NULL,
     stage_id TEXT,
-    visited_at TEXT NOT NULL,
-    status TEXT NOT NULL,
+    visit_date TEXT NOT NULL DEFAULT '',
+    start_time TEXT,
+    end_time TEXT,
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'OPEN',
+    visited_at TEXT,
     notes TEXT,
     sync_status TEXT NOT NULL DEFAULT 'LOCAL',
     created_at TEXT NOT NULL,
@@ -99,10 +104,16 @@ const schemaSql = `
   CREATE TABLE IF NOT EXISTS photos (
     id TEXT PRIMARY KEY NOT NULL,
     project_id TEXT NOT NULL,
-    visit_id TEXT,
+    visit_id TEXT NOT NULL,
     local_uri TEXT NOT NULL,
+    file_name TEXT NOT NULL DEFAULT '',
+    captured_at TEXT NOT NULL DEFAULT '',
+    latitude REAL,
+    longitude REAL,
     caption TEXT,
     created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    sync_status TEXT NOT NULL DEFAULT 'LOCAL',
     FOREIGN KEY (project_id) REFERENCES projects(id),
     FOREIGN KEY (visit_id) REFERENCES visits(id)
   );
@@ -112,6 +123,7 @@ const schemaSql = `
     stage_id TEXT NOT NULL,
     name TEXT NOT NULL,
     version INTEGER NOT NULL DEFAULT 1,
+    is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (stage_id) REFERENCES stages(id)
@@ -120,8 +132,11 @@ const schemaSql = `
   CREATE TABLE IF NOT EXISTS checklist_items (
     id TEXT PRIMARY KEY NOT NULL,
     template_id TEXT NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    description TEXT,
     label TEXT NOT NULL,
     order_index INTEGER NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (template_id) REFERENCES checklist_templates(id)
@@ -139,7 +154,12 @@ const schemaSql = `
   CREATE TABLE IF NOT EXISTS checklist_records (
     id TEXT PRIMARY KEY NOT NULL,
     snapshot_id TEXT NOT NULL,
+    visit_id TEXT,
+    checklist_item_id TEXT,
     item_id TEXT NOT NULL,
+    item_title TEXT NOT NULL DEFAULT '',
+    item_description TEXT,
+    item_order_index INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL,
     note TEXT,
     created_at TEXT NOT NULL,
@@ -152,6 +172,8 @@ const schemaSql = `
     id TEXT PRIMARY KEY NOT NULL,
     project_id TEXT NOT NULL,
     visit_id TEXT,
+    type TEXT NOT NULL DEFAULT 'TEXT',
+    text TEXT NOT NULL DEFAULT '',
     body TEXT NOT NULL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
@@ -239,9 +261,23 @@ const schemaSql = `
   CREATE INDEX IF NOT EXISTS idx_projects_stage ON projects(current_stage_id);
   CREATE INDEX IF NOT EXISTS idx_stages_order ON stages(order_index);
   CREATE INDEX IF NOT EXISTS idx_visits_project ON visits(project_id);
+  CREATE INDEX IF NOT EXISTS idx_visits_date ON visits(visit_date);
   CREATE INDEX IF NOT EXISTS idx_photos_project ON photos(project_id);
+  CREATE INDEX IF NOT EXISTS idx_photos_visit ON photos(visit_id);
+  CREATE INDEX IF NOT EXISTS idx_notes_visit ON notes(visit_id);
   CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status);
 `;
+
+const checklistSeedItems: Record<string, string[]> = {
+  'stage-1': ['بررسی بستر و خاک‌برداری', 'کنترل آرماتورهای فونداسیون', 'کنترل قالب‌بندی و ابعاد فونداسیون'],
+  'stage-2': ['کنترل اجرای ستون‌ها و تیرها', 'بررسی اتصالات و جوشکاری', 'کنترل شاقول و تراز اسکلت'],
+  'stage-3': ['کنترل آرماتوربندی سقف', 'بررسی بازشوها و غلاف‌ها', 'کنترل بتن‌ریزی و عمل‌آوری'],
+  'stage-4': ['کنترل دیوارچینی و مصالح', 'بررسی بازشوهای در و پنجره', 'کنترل اجرای عایق‌کاری'],
+  'stage-5': ['کنترل مسیر لوله‌های آب و فاضلاب', 'بررسی لوله‌گذاری برق و تابلوها', 'کنترل مسیر کانال‌ها و تجهیزات مکانیکی'],
+  'stage-6': ['بررسی زیرسازی نما', 'کنترل اتصالات و مهار نما', 'کنترل آب‌بندی و جزئیات اجرایی'],
+  'stage-7': ['کنترل کف‌سازی و شیب‌بندی', 'بررسی اجرای دیوار و سقف کاذب', 'کنترل کیفیت نهایی مصالح'],
+  'stage-8': ['کنترل تکمیل موارد باقی‌مانده', 'بررسی ایمنی و دسترسی ساختمان', 'ثبت جمع‌بندی بازدید نهایی'],
+};
 
 async function seedDefaultStages(db: SQLite.SQLiteDatabase) {
   await db.withTransactionAsync(async () => {
@@ -259,6 +295,69 @@ async function seedDefaultStages(db: SQLite.SQLiteDatabase) {
           stage.updatedAt,
         ],
       );
+    }
+  });
+}
+
+async function ensureColumn(db: SQLite.SQLiteDatabase, table: string, column: string, definition: string) {
+  const columns = await db.getAllAsync<{ name: string }>(`PRAGMA table_info(${table})`);
+  if (!columns.some((item) => item.name === column)) {
+    await db.execAsync(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+async function migratePhase3Columns(db: SQLite.SQLiteDatabase) {
+  const columns = [
+    ['visits', 'visit_date', "TEXT NOT NULL DEFAULT ''"],
+    ['visits', 'start_time', 'TEXT'],
+    ['visits', 'end_time', 'TEXT'],
+    ['visits', 'title', "TEXT NOT NULL DEFAULT ''"],
+    ['visits', 'description', 'TEXT'],
+    ['photos', 'file_name', "TEXT NOT NULL DEFAULT ''"],
+    ['photos', 'captured_at', "TEXT NOT NULL DEFAULT ''"],
+    ['photos', 'latitude', 'REAL'],
+    ['photos', 'longitude', 'REAL'],
+    ['photos', 'updated_at', "TEXT NOT NULL DEFAULT ''"],
+    ['photos', 'sync_status', "TEXT NOT NULL DEFAULT 'LOCAL'"],
+    ['checklist_templates', 'is_active', 'INTEGER NOT NULL DEFAULT 1'],
+    ['checklist_items', 'title', "TEXT NOT NULL DEFAULT ''"],
+    ['checklist_items', 'description', 'TEXT'],
+    ['checklist_items', 'is_active', 'INTEGER NOT NULL DEFAULT 1'],
+    ['checklist_records', 'visit_id', 'TEXT'],
+    ['checklist_records', 'checklist_item_id', 'TEXT'],
+    ['checklist_records', 'item_title', "TEXT NOT NULL DEFAULT ''"],
+    ['checklist_records', 'item_description', 'TEXT'],
+    ['checklist_records', 'item_order_index', 'INTEGER NOT NULL DEFAULT 0'],
+    ['notes', 'type', "TEXT NOT NULL DEFAULT 'TEXT'"],
+    ['notes', 'text', "TEXT NOT NULL DEFAULT ''"],
+  ] as const;
+
+  for (const [table, column, definition] of columns) {
+    await ensureColumn(db, table, column, definition);
+  }
+}
+
+async function seedDefaultChecklists(db: SQLite.SQLiteDatabase) {
+  await db.withTransactionAsync(async () => {
+    for (const [stageId, itemTitles] of Object.entries(checklistSeedItems)) {
+      const now = new Date().toISOString();
+      const templateId = `template-${stageId}-v1`;
+      await db.runAsync(
+        `INSERT OR IGNORE INTO checklist_templates
+          (id, stage_id, name, version, is_active, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [templateId, stageId, `چک‌لیست ${stageId}`, 1, 1, now, now],
+      );
+
+      for (const [index, title] of itemTitles.entries()) {
+        const itemId = `${templateId}-item-${index + 1}`;
+        await db.runAsync(
+          `INSERT OR IGNORE INTO checklist_items
+            (id, template_id, title, description, label, order_index, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [itemId, templateId, title, null, title, index + 1, 1, now, now],
+        );
+      }
     }
   });
 }
@@ -337,7 +436,9 @@ export async function initializeLocalDatabase() {
     initializationPromise = (async () => {
       const db = await database();
       await db.execAsync(schemaSql);
+      await migratePhase3Columns(db);
       await seedDefaultStages(db);
+      await seedDefaultChecklists(db);
       await migrateLegacyProjects(db);
       return db;
     })().catch((error) => {

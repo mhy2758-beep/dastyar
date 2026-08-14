@@ -1,5 +1,8 @@
 export type ProjectStatus = 'ACTIVE' | 'COMPLETED' | 'SUSPENDED' | 'ARCHIVED';
 export type SyncStatus = 'LOCAL' | 'PENDING' | 'SYNCING' | 'SYNCED' | 'ERROR';
+export type VisitStatus = 'OPEN' | 'COMPLETED' | 'CANCELLED';
+export type ChecklistItemStatus = 'PENDING' | 'PASS' | 'FAIL' | 'NOT_APPLICABLE';
+export type NoteType = 'TEXT' | 'VOICE';
 
 export type Stage = {
   id: string;
@@ -30,6 +33,85 @@ export type Project = {
   updatedAt: string;
   lastVisitAt?: string;
   openViolationCount: number;
+  syncStatus: SyncStatus;
+};
+
+export type Visit = {
+  id: string;
+  projectId: string;
+  stageId: string;
+  visitDate: string;
+  startTime?: string;
+  endTime?: string;
+  title: string;
+  description?: string;
+  status: VisitStatus;
+  createdAt: string;
+  updatedAt: string;
+  syncStatus: SyncStatus;
+  checklistCompletedCount: number;
+  checklistTotalCount: number;
+  openViolationCount: number;
+};
+
+export type ChecklistTemplate = {
+  id: string;
+  stageId: string;
+  name: string;
+  version: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ChecklistItem = {
+  id: string;
+  templateId: string;
+  title: string;
+  description?: string;
+  orderIndex: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ChecklistRecord = {
+  id: string;
+  visitId: string;
+  snapshotId: string;
+  checklistItemId: string;
+  title: string;
+  description?: string;
+  orderIndex: number;
+  status: ChecklistItemStatus;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Photo = {
+  id: string;
+  projectId: string;
+  visitId: string;
+  localUri: string;
+  fileName: string;
+  capturedAt: string;
+  latitude?: number;
+  longitude?: number;
+  caption?: string;
+  createdAt: string;
+  updatedAt: string;
+  syncStatus: SyncStatus;
+};
+
+export type Note = {
+  id: string;
+  projectId: string;
+  visitId: string;
+  type: NoteType;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
   syncStatus: SyncStatus;
 };
 
